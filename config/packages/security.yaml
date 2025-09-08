@@ -16,7 +16,7 @@ security:
             form_login:
                 login_path: admin_auth_login
                 check_path: admin_auth_check
-                default_target_path: admin_dashboard
+                default_target_path: admin_users_index
                 always_use_default_target_path: true
             logout:
                 path: admin_auth_logout
