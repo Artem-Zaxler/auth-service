@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\TransactionRequiredException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -44,55 +45,49 @@ class UserRepository extends ServiceEntityRepository
         return $this->findOneBy(['email' => $email]);
     }
 
-    public function save(User $user): void
+    public function save(User $user, bool $flush = true): void
     {
         $this->getEntityManager()->persist($user);
-        $this->getEntityManager()->flush();
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
-    public function remove(User $user): void
+    public function remove(User $user, bool $flush = true): void
     {
         $this->getEntityManager()->remove($user);
-        $this->getEntityManager()->flush();
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
-    public function getUserActivityStats(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo): array
+    public function transactionalSave(User $user): void
     {
-        $qb = $this->createQueryBuilder('u');
-        $qb->select('u.username', 'COUNT(s.id) as sessionCount', 'MAX(s.startedAt) as lastActivity')
-            ->leftJoin('u.sessions', 's')
-            ->groupBy('u.id');
+        $em = $this->getEntityManager();
+        $em->beginTransaction();
 
-        if ($dateFrom) {
-            $qb->andWhere('s.startedAt >= :dateFrom')
-                ->setParameter('dateFrom', $dateFrom);
+        try {
+            $em->persist($user);
+            $em->flush();
+            $em->commit();
+        } catch (\Exception $e) {
+            $em->rollback();
+            throw $e;
         }
-
-        if ($dateTo) {
-            $qb->andWhere('s.startedAt <= :dateTo')
-                ->setParameter('dateTo', $dateTo);
-        }
-
-        return $qb->getQuery()->getResult();
     }
 
-    public function getRegistrationStats(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo): array
+    public function findWithLock(int $userId): ?User
     {
-        $qb = $this->createQueryBuilder('u')
-            ->select('DATE(u.createdAt) as date', 'COUNT(u.id) as registrations')
-            ->groupBy('date')
-            ->orderBy('date', 'DESC');
-
-        if ($dateFrom) {
-            $qb->andWhere('u.createdAt >= :dateFrom')
-                ->setParameter('dateFrom', $dateFrom);
+        try {
+            return $this->getEntityManager()
+                ->createQuery('SELECT u FROM App\Entity\User u WHERE u.id = :id')
+                ->setParameter('id', $userId)
+                ->setLockMode(\Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE)
+                ->getOneOrNullResult();
+        } catch (TransactionRequiredException $e) {
+            return $this->find($userId);
         }
-
-        if ($dateTo) {
-            $qb->andWhere('u.createdAt <= :dateTo')
-                ->setParameter('dateTo', $dateTo);
-        }
-
-        return $qb->getQuery()->getResult();
     }
 }

@@ -21,15 +21,7 @@ class ReportRepository extends ServiceEntityRepository
             ->leftJoin('u.sessions', 's')
             ->groupBy('u.id');
 
-        if ($dto->dateFrom) {
-            $qb->andWhere('s.startedAt >= :dateFrom')
-                ->setParameter('dateFrom', $dto->dateFrom);
-        }
-
-        if ($dto->dateTo) {
-            $qb->andWhere('s.startedAt <= :dateTo')
-                ->setParameter('dateTo', $dto->dateTo);
-        }
+        $this->applyDateFilters($qb, $dto, 's.startedAt');
 
         return $qb->getQuery()->getResult();
     }
@@ -37,41 +29,25 @@ class ReportRepository extends ServiceEntityRepository
     public function getUserRegistrationsReport(ReportRequestDto $dto): array
     {
         $qb = $this->createQueryBuilder('u')
-            ->select('u.createdAt', 'u.id')
-            ->orderBy('u.createdAt', 'DESC');
+            ->select('DATE(u.createdAt) as date', 'COUNT(u.id) as registrations')
+            ->groupBy('date')
+            ->orderBy('date', 'DESC');
 
+        $this->applyDateFilters($qb, $dto, 'u.createdAt');
+
+        return $qb->getQuery()->getResult();
+    }
+
+    private function applyDateFilters($qb, ReportRequestDto $dto, string $field): void
+    {
         if ($dto->dateFrom) {
-            $qb->andWhere('u.createdAt >= :dateFrom')
+            $qb->andWhere("$field >= :dateFrom")
                 ->setParameter('dateFrom', $dto->dateFrom);
         }
 
         if ($dto->dateTo) {
-            $qb->andWhere('u.createdAt <= :dateTo')
+            $qb->andWhere("$field <= :dateTo")
                 ->setParameter('dateTo', $dto->dateTo);
         }
-
-        $users = $qb->getQuery()->getResult();
-
-        $registrationsByDate = [];
-        foreach ($users as $user) {
-            $date = $user['createdAt']->format('Y-m-d');
-            if (!isset($registrationsByDate[$date])) {
-                $registrationsByDate[$date] = 0;
-            }
-            $registrationsByDate[$date]++;
-        }
-
-        $result = [];
-        foreach ($registrationsByDate as $date => $count) {
-            $result[] = [
-                'date' => $date,
-                'registrations' => $count
-            ];
-        }
-        usort($result, function ($a, $b) {
-            return $b['date'] <=> $a['date'];
-        });
-
-        return $result;
     }
 }
