@@ -49,9 +49,50 @@ class UserRepository extends ServiceEntityRepository
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
     }
+
     public function remove(User $user): void
     {
         $this->getEntityManager()->remove($user);
         $this->getEntityManager()->flush();
+    }
+
+    public function getUserActivityStats(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo): array
+    {
+        $qb = $this->createQueryBuilder('u');
+        $qb->select('u.username', 'COUNT(s.id) as sessionCount', 'MAX(s.startedAt) as lastActivity')
+            ->leftJoin('u.sessions', 's')
+            ->groupBy('u.id');
+
+        if ($dateFrom) {
+            $qb->andWhere('s.startedAt >= :dateFrom')
+                ->setParameter('dateFrom', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $qb->andWhere('s.startedAt <= :dateTo')
+                ->setParameter('dateTo', $dateTo);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function getRegistrationStats(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo): array
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->select('DATE(u.createdAt) as date', 'COUNT(u.id) as registrations')
+            ->groupBy('date')
+            ->orderBy('date', 'DESC');
+
+        if ($dateFrom) {
+            $qb->andWhere('u.createdAt >= :dateFrom')
+                ->setParameter('dateFrom', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $qb->andWhere('u.createdAt <= :dateTo')
+                ->setParameter('dateTo', $dateTo);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }

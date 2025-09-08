@@ -27,7 +27,7 @@ class AdminRedirectListener
 
         /* При любой 404 ошибке в админ-панели 
            перенеправляем на дефолтную страницу списка пользователей */
-        if (str_starts_with($path, '/admin')) {
+        if (str_starts_with($path, '/admin') || $path === '/') {
             $response = new RedirectResponse(
                 $this->router->generate('admin_users_index')
             );

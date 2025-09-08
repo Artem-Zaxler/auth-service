@@ -1,0 +1,85 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4 text-gray-800">Отчеты</h1>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Параметры отчета</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="report_type" class="form-label">Тип отчета</label>
+                                    <select class="form-control" id="report_type" name="report_type">
+                                        <option value="">Выберите тип отчета</option>
+                                        <option value="user_activity" {{ formData.report_type == 'user_activity' ? 'selected' : '' }}>Активность пользователей</option>
+                                        <option value="user_registrations" {{ formData.report_type == 'user_registrations' ? 'selected' : '' }}>Регистрации пользователей</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="date_from" class="form-label">Дата с</label>
+                                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                                           value="{{ formData.date_from }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="date_to" class="form-label">Дата по</label>
+                                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                                           value="{{ formData.date_to }}">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Сформировать отчет
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            {% if results is not empty %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Результаты отчета</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {% for key in results[0]|keys %}
+                                        <th>{{ key|replace({'_': ' '})|title }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in results %}
+                                    <tr>
+                                        {% for value in row %}
+                                            <td>
+                                                {{ value }}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
