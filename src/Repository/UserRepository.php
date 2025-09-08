@@ -19,6 +19,7 @@ class UserRepository extends ServiceEntityRepository
     public function findAllPaginated(int $page, int $limit): array
     {
         return $this->createQueryBuilder("u")
+            ->orderBy('u.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)
             ->getQuery()

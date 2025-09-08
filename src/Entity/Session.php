@@ -6,6 +6,8 @@ use App\Repository\SessionRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SessionRepository::class)]
+#[ORM\Index(columns: ['user_entity_id', 'finished_at'], name: 'session_user_finished_idx')]
+#[ORM\Index(columns: ['started_at'], name: 'session_started_at_idx')]
 class Session
 {
     #[ORM\Id]

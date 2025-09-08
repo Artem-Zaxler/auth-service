@@ -9,6 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[ORM\Index(columns: ['username'], name: 'user_username_idx')]
+#[ORM\Index(columns: ['email'], name: 'user_email_idx')]
+#[ORM\Index(columns: ['created_at'], name: 'user_created_at_idx')]
 class User
 {
     #[ORM\Id]
@@ -16,10 +19,10 @@ class User
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $username = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $email = null;
 
     #[ORM\Column]
