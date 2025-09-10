@@ -12,7 +12,7 @@ security:
             security: false
         api:
             pattern: ^/api
-            stateless: true 
+            stateless: true
             jwt: ~
         admin:
             pattern: ^/admin 
@@ -20,11 +20,20 @@ security:
             form_login:
                 login_path: admin_auth_login
                 check_path: admin_auth_check
-                default_target_path: admin_users_index
-                always_use_default_target_path: true
             logout:
                 path: admin_auth_logout
                 target: admin_auth_login
+            access_denied_handler: App\Security\AdminAccessDeniedHandler
+        user:
+            pattern: (^/user|^/authorize|^/oauth2) 
+            provider: app_user_provider
+            form_login:
+                login_path: user_auth_login
+                check_path: user_auth_check
+                default_target_path: /authorize
+            logout:
+                path: user_auth_logout
+                target: user_auth_login
         main:
             lazy: true
             provider: app_user_provider
@@ -32,9 +41,13 @@ security:
     access_control:
         - { path: ^/admin/auth, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/user/auth, roles: PUBLIC_ACCESS }
+        - { path: ^/user, roles: ROLE_ADMIN }
         - { path: ^/api/auth, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/authorize,       roles: ROLE_USER }
+        - { path: ^/oauth2/consent, roles: IS_AUTHENTICATED_FULLY }
 
     role_hierarchy:
         ROLE_ADMIN: [ROLE_USER]

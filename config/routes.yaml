@@ -10,6 +10,12 @@ admin_auth_logout:
 admin_auth_check:
     path: /admin/auth/check
 
+user_auth_logout:
+    path: /user/auth/logout
+
+user_auth_check:
+    path: /user/auth/check
+
 api_login_check:
     path: /api/login_check
 

@@ -1,12 +1,12 @@
-{% extends 'admin/auth/auth_base.html.twig' %}
+{% extends 'user/auth/auth_base.html.twig' %}
 
-{% block title %}Авторизация в админку{% endblock %}
+{% block title %}Авторизация{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-body p-5">
         <div class="text-center mb-4">
-            <h4 class="text-gray-900 mb-2">Панель администратора</h4>
+            <h4 class="text-gray-900 mb-2">Сервис авторизации</h4>
             <p class="text-muted">Введите ваши учетные данные для входа</p>
         </div>
         
@@ -17,13 +17,7 @@
             </div>
         {% endif %}
 
-        {% for flashError in app.flashes('error') %}
-            <div class="alert alert-danger">
-                {{ flashError }}
-            </div>
-        {% endfor %}
-
-        <form method="post" action="{{ path('admin_auth_check') }}">
+        <form method="post" action="{{ path('user_auth_check') }}">
             <div class="mb-3">
                 <label for="username" class="form-label">Имя пользователя</label>
                 <input type="text" class="form-control" id="username" name="_username" 

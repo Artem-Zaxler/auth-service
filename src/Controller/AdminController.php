@@ -24,6 +24,22 @@ class AdminController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
+    #[Route("/admin/auth/login", name: "admin_auth_login")]
+    public function login(AuthenticationUtils $authenticationUtils): Response
+    {
+        if ($this->isGranted("ROLE_ADMIN")) {
+            return $this->redirectToRoute("admin_users_index");
+        }
+
+        $error = $authenticationUtils->getLastAuthenticationError();
+        $lastUsername = $authenticationUtils->getLastUsername();
+
+        return $this->render("admin/auth/login.html.twig", [
+            'error' => $error,
+            'last_username' => $lastUsername
+        ]);
+    }
+
     #[Route(path: "/admin/users", name: "admin_users_index", methods: ["GET"])]
     public function index(Request $request): Response
     {
@@ -71,22 +87,6 @@ class AdminController extends AbstractController
 
         return $this->render("admin/users/create.html.twig", [
             'available_roles' => ['ROLE_USER', 'ROLE_ADMIN']
-        ]);
-    }
-
-    #[Route("/admin/auth/login", name: "admin_auth_login")]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
-        if ($this->isGranted("ROLE_ADMIN")) {
-            return $this->redirectToRoute("admin_users_index");
-        }
-
-        $error = $authenticationUtils->getLastAuthenticationError();
-        $lastUsername = $authenticationUtils->getLastUsername();
-
-        return $this->render("admin/auth/login.html.twig", [
-            'error' => $error,
-            'last_username' => $lastUsername
         ]);
     }
 

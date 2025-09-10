@@ -4,14 +4,10 @@ namespace App\Controller;
 
 use App\Dto\UserDto;
 use App\Dto\LoginDto;
-use App\Dto\RefreshTokenDto;
 use App\Service\AuthService;
 use Psr\Log\LoggerInterface;
 use OpenApi\Attributes as OA;
-use App\DTO\Auth\LoginRequestDto;
-use App\DTO\Auth\LoginResponseDto;
 use App\Service\Dto\UserDtoMapper;
-use App\DTO\Auth\RefreshRequestDto;
 use App\Service\RefreshTokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
@@ -23,6 +19,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class AuthController extends AbstractController
 {
@@ -34,6 +31,27 @@ class AuthController extends AbstractController
         private ValidatorInterface $validator,
         private LoggerInterface $logger
     ) {}
+
+    #[Route("/user/auth/login", name: "user_auth_login")]
+    public function login(AuthenticationUtils $authenticationUtils): Response
+    {
+        if ($this->isGranted("ROLE_USER")) {
+            return $this->redirect('/authorize');
+        }
+        $error = $authenticationUtils->getLastAuthenticationError();
+        $lastUsername = $authenticationUtils->getLastUsername();
+
+        return $this->render("user/auth/login.html.twig", [
+            'error' => $error,
+            'last_username' => $lastUsername,
+        ]);
+    }
+
+    #[Route("/user/auth/logout", name: "user_auth_logout")]
+    public function logout(): void
+    {
+        throw new \LogicException('This should never be reached.');
+    }
 
     #[
         Route("/api/auth/login", name: "api_auth_login", methods: ["POST"]),
@@ -85,7 +103,7 @@ class AuthController extends AbstractController
             ]
         )
     ]
-    public function login(Request $request): JsonResponse
+    public function loginApi(Request $request): JsonResponse
     {
         try {
             $data = [
@@ -155,7 +173,7 @@ class AuthController extends AbstractController
             ]
         )
     ]
-    public function logout(Request $request): JsonResponse
+    public function logoutApi(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -192,7 +210,7 @@ class AuthController extends AbstractController
             ]
         )
     ]
-    public function me(Security $security): JsonResponse
+    public function meApi(Security $security): JsonResponse
     {
         $user = $security->getUser();
 

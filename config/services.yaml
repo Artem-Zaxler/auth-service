@@ -11,3 +11,7 @@ services:
     App\EventListener\AdminRedirectListener:
         tags:
             - { name: kernel.event_listener, event: kernel.exception }
+
+    App\EventSubscriber\OAuth2AuthorizationSubscriber:
+        tags:
+            - { name: kernel.event_listener, event: league.oauth2_server.event.authorization_request_resolve, method: onAuthorizationRequestResolve, priority: 256 }
