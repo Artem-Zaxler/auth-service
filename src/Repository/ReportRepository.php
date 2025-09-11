@@ -29,7 +29,7 @@ class ReportRepository extends ServiceEntityRepository
     public function getUserRegistrationsReport(ReportRequestDto $dto): array
     {
         $qb = $this->createQueryBuilder('u')
-            ->select('DATE(u.createdAt) as date', 'COUNT(u.id) as registrations')
+            ->select('CAST(u.createdAt AS DATE) as date', 'COUNT(u.id) as registrations')
             ->groupBy('date')
             ->orderBy('date', 'DESC');
 
