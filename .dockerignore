@@ -1,0 +1,7 @@
+.git/
+var/
+frankenphp/conf.d/20-app.dev.ini  # Исключаем dev-конфиг для prod
+.env.local
+.dockerignore
+Dockerfile
+docker-compose.*

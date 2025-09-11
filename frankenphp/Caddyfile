@@ -1,0 +1,17 @@
+{
+    frankenphp {
+        num_threads 4
+        worker ./public/index.php 2
+    }
+}
+
+:2015 {
+    root * /app/public
+    encode gzip zstd
+
+    # Serve static files
+    file_server
+
+    # Handle PHP files
+    php_server
+}
