@@ -23,7 +23,7 @@ class UserController extends AbstractController
         Route(path: "/api/users", name: "api_users_list", methods: ["GET"]),
         OA\Get(
             summary: "Получение списка пользователей с пагинацией",
-            description: "Возвращает список пользователей с поддержкой пагинации. Требует аутентификации и прав ROLE_USER или SCOPE_user.read",
+            description: "Возвращает список пользователей с поддержкой пагинации. Требует аутентификации и прав ROLE_USER или SCOPE_user:read",
             tags: ["Users Management"],
             parameters: [
                 new OA\Parameter(
@@ -110,7 +110,7 @@ class UserController extends AbstractController
     ]
     public function listUsers(Request $request): JsonResponse
     {
-        if (!$this->isGranted('ROLE_USER') && !$this->isGranted('SCOPE_user.read')) {
+        if (!$this->isGranted('ROLE_USER') && !$this->isGranted('SCOPE_user:read')) {
             throw new AccessDeniedException('Not authenticated.');
         }
 

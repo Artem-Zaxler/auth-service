@@ -11,8 +11,8 @@ league_oauth2_server:
     resource_server:
         public_key: '%env(resolve:OAUTH_PUBLIC_KEY)%'
     scopes:
-        available: ['user.read', 'user.write']
-        default: ['user.read']
+        available: ['user:read', 'user:write']
+        default: ['user:read']
     persistence:
         doctrine:
             entity_manager: default

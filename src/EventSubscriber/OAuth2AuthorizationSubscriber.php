@@ -32,6 +32,7 @@ class OAuth2AuthorizationSubscriber implements EventSubscriberInterface
         $request = $this->requestStack->getCurrentRequest();
 
         $this->logger->info('Authorization request params: ' . json_encode($request->query->all()));
+        $this->logger->info('Authorization EVENT params: ' . json_encode($event->getScopes()));
 
         if ($request->query->get('approve') === '1') {
             $event->resolveAuthorization(true);
@@ -45,7 +46,7 @@ class OAuth2AuthorizationSubscriber implements EventSubscriberInterface
 
         $redirectUri = $this->router->generate('oauth2_consent', [
             'client_id' => $event->getClient()->getIdentifier(),
-            'scopes' => implode(',', $event->getScopes()),
+            'scope' => implode(' ', $event->getScopes()),
             'state' => $event->getState(),
             'redirect_uri' => $event->getRedirectUri(),
             'response_type' => 'code',
