@@ -182,7 +182,6 @@ class User implements PasswordAuthenticatedUserInterface, UserInterface
     public function removeSession(Session $session): static
     {
         if ($this->sessions->removeElement($session)) {
-            // set the owning side to null (unless already changed)
             if ($session->getUserEntity() === $this) {
                 $session->setUserEntity(null);
             }

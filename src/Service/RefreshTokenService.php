@@ -5,17 +5,18 @@ namespace App\Service;
 use App\Entity\RefreshToken;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 class RefreshTokenService
 {
     public function __construct(
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private LoggerInterface $logger
     ) {}
 
     public function createRefreshToken(User $user): RefreshToken
     {
-        // Инвалидируем старые токены пользователя
         $this->invalidateUserTokens($user);
 
         $refreshToken = new RefreshToken();
@@ -26,6 +27,11 @@ class RefreshTokenService
 
         $this->em->persist($refreshToken);
         $this->em->flush();
+
+        $this->logger->info('Refresh token created', [
+            'user_id' => $user->getId(),
+            'token_id' => $refreshToken->getId(),
+        ]);
 
         return $refreshToken;
     }
@@ -39,8 +45,14 @@ class RefreshTokenService
             ]);
 
         if (!$refreshToken || $refreshToken->getExpiresAt() < new \DateTimeImmutable()) {
+            $this->logger->warning('Refresh token validation failed', ['token' => $token]);
             return null;
         }
+
+        $this->logger->info('Refresh token validated successfully', [
+            'token_id' => $refreshToken->getId(),
+            'user_id' => $refreshToken->getUserEntity()->getId(),
+        ]);
 
         return $refreshToken->getUserEntity();
     }
@@ -52,9 +64,17 @@ class RefreshTokenService
 
         if ($refreshToken) {
             $refreshToken->setIsRevoked(true);
+            $this->em->flush();
         }
 
-        return $this->createRefreshToken($refreshToken->getUserEntity());
+        $newToken = $this->createRefreshToken($refreshToken->getUserEntity());
+
+        $this->logger->info('Refresh token refreshed', [
+            'old_token' => $oldToken,
+            'new_token_id' => $newToken->getId(),
+        ]);
+
+        return $newToken;
     }
 
     public function invalidateRefreshToken(string $token): void
@@ -65,6 +85,8 @@ class RefreshTokenService
         if ($refreshToken) {
             $refreshToken->setIsRevoked(true);
             $this->em->flush();
+
+            $this->logger->info('Refresh token invalidated', ['token_id' => $refreshToken->getId()]);
         }
     }
 
@@ -78,5 +100,7 @@ class RefreshTokenService
         }
 
         $this->em->flush();
+
+        $this->logger->info('All user refresh tokens invalidated', ['user_id' => $user->getId()]);
     }
 }

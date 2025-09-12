@@ -7,7 +7,6 @@ use App\Entity\Session;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\OptimisticLockException;
-use Doctrine\ORM\TransactionRequiredException;
 
 /**
  * @extends ServiceEntityRepository<Session>
@@ -106,5 +105,32 @@ class SessionRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result ? new \DateTimeImmutable($result) : null;
+    }
+
+    public function findById(int $id): ?Session
+    {
+        return $this->find($id);
+    }
+
+    public function findByUserPaginated(int $userId, int $page, int $limit): array
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.userEntity = :userId')
+            ->setParameter('userId', $userId)
+            ->orderBy('s.startedAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countByUser(int $userId): int
+    {
+        return $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.userEntity = :userId')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

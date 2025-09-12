@@ -22,10 +22,14 @@ class OAuth2ConsentService
             $this->logger->warning("OAuth2ConsentService: Client not found", ['client_id' => $dto->clientId]);
             return false;
         }
+
         if (!$client->isActive()) {
             $this->logger->warning("OAuth2ConsentService: Client is inactive", ['client_id' => $dto->clientId]);
             return false;
         }
+
+        $this->logger->info("OAuth2ConsentService: Client validated successfully", ['client_id' => $dto->clientId]);
+
         return true;
     }
 
@@ -38,11 +42,15 @@ class OAuth2ConsentService
             'state' => $dto->state,
             'response_type' => $dto->responseType,
         ];
+
         if ($approved) {
             $params['approve'] = '1';
+            $this->logger->info("OAuth2ConsentService: User approved consent", ['client_id' => $dto->clientId]);
         } else {
             $params['deny'] = '1';
+            $this->logger->info("OAuth2ConsentService: User denied consent", ['client_id' => $dto->clientId]);
         }
+
         return $this->urlGenerator->generate('oauth2_authorize', $params, UrlGeneratorInterface::ABSOLUTE_URL);
     }
 }

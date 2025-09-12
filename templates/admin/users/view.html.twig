@@ -13,6 +13,10 @@
                         <i class="fas fa-edit me-1"></i>
                         Редактировать
                     </a>
+                    <a href="{{ path('admin_user_sessions_index', {'userId': user.id}) }}" class="btn btn-info">
+                        <i class="fas fa-list me-1"></i>
+                        Сессии
+                    </a>
                     <a href="{{ path('admin_users_index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-1"></i>
                         Назад к списку

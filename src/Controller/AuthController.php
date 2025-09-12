@@ -8,7 +8,7 @@ use App\Service\AuthService;
 use App\Dto\ApiResponseDto;
 use Psr\Log\LoggerInterface;
 use OpenApi\Attributes as OA;
-use App\Service\Dto\UserDtoMapper;
+use App\Dto\UserDtoMapper;
 use App\Service\RefreshTokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;

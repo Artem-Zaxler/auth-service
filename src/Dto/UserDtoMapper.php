@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Service\Dto;
+namespace App\Dto;
 
 use App\Dto\UserDto;
 use App\Entity\User;
