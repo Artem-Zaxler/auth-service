@@ -10,13 +10,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class UserController extends AbstractController
 {
     public function __construct(
-        private AdminService $adminService
+        private AdminService $adminService,
+        private ValidatorInterface $validator
     ) {}
 
     #[
@@ -121,28 +123,49 @@ class UserController extends AbstractController
         $dto->page = $page;
         $dto->limit = $limit;
 
-        $result = $this->adminService->getPaginatedUsers($dto);
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
 
-        $usersArray = array_map(function ($user) {
-            return [
-                'id' => $user->getId(),
-                'username' => $user->getUsername(),
-                'email' => $user->getEmail(),
-                'roles' => $user->getRoles(),
-                'isBlocked' => $user->isBlocked(),
-                'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
-                'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s')
-            ];
-        }, $result['users']);
+            return $this->json([
+                'error' => 'Bad Request',
+                'message' => 'Invalid pagination parameters',
+                'details' => $errorMessages
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
-        return $this->json([
-            'users' => $usersArray,
-            'pagination' => [
-                'page' => $result['page'],
-                'limit' => $result['limit'],
-                'total' => $result['total'],
-                'totalPages' => $result['totalPages']
-            ]
-        ], Response::HTTP_OK);
+        try {
+            $result = $this->adminService->getPaginatedUsers($dto);
+
+            $usersArray = array_map(function ($user) {
+                return [
+                    'id' => $user->getId(),
+                    'username' => $user->getUsername(),
+                    'email' => $user->getEmail(),
+                    'roles' => $user->getRoles(),
+                    'isBlocked' => $user->isBlocked(),
+                    'createdAt' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
+                    'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s')
+                ];
+            }, $result['users']);
+
+            return $this->json([
+                'users' => $usersArray,
+                'pagination' => [
+                    'page' => $result['page'],
+                    'limit' => $result['limit'],
+                    'total' => $result['total'],
+                    'totalPages' => $result['totalPages']
+                ]
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Server error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

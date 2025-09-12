@@ -107,10 +107,24 @@ class AuthController extends AbstractController
     {
         try {
             $data = [
-                'username' => $request->request->get('username'),
-                'password' => $request->request->get('password'),
+                'username' => $request->request->get('username') ?? $request->toArray()['username'] ?? '',
+                'password' => $request->request->get('password') ?? $request->toArray()['password'] ?? '',
             ];
+
             $loginDto = new LoginDto($data);
+
+            $errors = $this->validator->validate($loginDto);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+
+                return $this->json([
+                    'error' => 'Validation failed',
+                    'messages' => $errorMessages
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             $user = $this->authService->authenticate($loginDto);
 
@@ -123,6 +137,11 @@ class AuthController extends AbstractController
                 'error' => 'Authentication failed',
                 'message' => $e->getMessage()
             ], Response::HTTP_UNAUTHORIZED);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Server error',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -175,15 +194,27 @@ class AuthController extends AbstractController
     ]
     public function logoutApi(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        try {
+            $data = json_decode($request->getContent(), true) ?? [];
 
-        if (isset($data['refresh_token'])) {
+            if (!isset($data['refresh_token'])) {
+                return $this->json([
+                    'error' => 'Bad Request',
+                    'message' => 'Refresh token is required'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             $this->refreshTokenService->invalidateRefreshToken($data['refresh_token']);
-        }
 
-        return $this->json([
-            'message' => 'Logout successful'
-        ]);
+            return $this->json([
+                'message' => 'Logout successful'
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Logout failed',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[
