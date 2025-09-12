@@ -4,15 +4,23 @@ namespace App\Dto;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "ReportRequestDto",
+    description: "Data for generating reports"
+)]
 class ReportRequestDto
 {
+    #[OA\Property(type: "string", format: "date", example: "2024-01-01")]
     #[Assert\DateTime(format: 'Y-m-d', message: "Date from must be in format YYYY-MM-DD")]
     public ?\DateTimeImmutable $dateFrom = null;
 
+    #[OA\Property(type: "string", format: "date", example: "2024-12-31")]
     #[Assert\DateTime(format: 'Y-m-d', message: "Date to must be in format YYYY-MM-DD")]
     public ?\DateTimeImmutable $dateTo = null;
 
+    #[OA\Property(type: "string", example: "user_activity", enum: ["user_activity", "user_registrations"])]
     #[Assert\NotBlank(message: "Report type is required")]
     #[Assert\Choice(
         choices: ['user_activity', 'user_registrations'],

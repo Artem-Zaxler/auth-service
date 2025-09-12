@@ -9,7 +9,6 @@ use App\Dto\ApiResponseDto;
 use Psr\Log\LoggerInterface;
 use OpenApi\Attributes as OA;
 use App\Dto\UserDtoMapper;
-use App\Service\RefreshTokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -26,7 +25,6 @@ class AuthController extends AbstractController
 {
     public function __construct(
         private AuthService $authService,
-        private RefreshTokenService $refreshTokenService,
         private UserDtoMapper $userDtoMapper,
         private EntityManagerInterface $em,
         private ValidatorInterface $validator,
@@ -63,10 +61,7 @@ class AuthController extends AbstractController
                 description: "Данные для аутентификации",
                 required: true,
                 content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "username", type: "string", example: "user@example.com"),
-                        new OA\Property(property: "password", type: "string", example: "password123")
-                    ]
+                    ref: new Model(type: LoginDto::class)
                 )
             ),
             responses: [
@@ -84,25 +79,14 @@ class AuthController extends AbstractController
                     response: 401,
                     description: "Ошибка аутентификации",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 401),
-                            new OA\Property(property: "message", type: "string", example: "Authentication failed"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 400,
                     description: "Неверные данные запроса",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 400),
-                            new OA\Property(property: "message", type: "string", example: "Validation failed"),
-                            new OA\Property(property: "errors", type: "array", items: new OA\Items(type: "object")),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 )
             ]
@@ -175,33 +159,21 @@ class AuthController extends AbstractController
                     response: 200,
                     description: "Успешный выход из системы",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "message", type: "string", example: "Logout successful")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 400,
                     description: "Неверный refresh token",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 400),
-                            new OA\Property(property: "message", type: "string", example: "Refresh token is required"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 401,
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 401),
-                            new OA\Property(property: "message", type: "string", example: "Unauthorized"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 )
             ]
@@ -217,7 +189,7 @@ class AuthController extends AbstractController
                     Response::HTTP_BAD_REQUEST
                 );
             }
-            $this->refreshTokenService->invalidateRefreshToken($data['refresh_token']);
+            // $this->refreshTokenService->invalidateRefreshToken($data['refresh_token']);
             return $this->json(
                 ApiResponseDto::success(['message' => 'Logout successful'])
             );
@@ -240,18 +212,15 @@ class AuthController extends AbstractController
                 new OA\Response(
                     response: 200,
                     description: "Успешное получение данных пользователя",
-                    content: new OA\JsonContent(ref: new Model(type: UserDto::class))
+                    content: new OA\JsonContent(
+                        ref: new Model(type: UserDto::class)
+                    )
                 ),
                 new OA\Response(
                     response: 401,
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 401),
-                            new OA\Property(property: "message", type: "string", example: "Not authenticated"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 )
             ]

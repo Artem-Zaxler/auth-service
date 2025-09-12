@@ -35,8 +35,6 @@ final class Version20250908010419 extends AbstractMigration
         $this->addSql('CREATE TABLE oauth2_refresh_token (identifier CHAR(80) NOT NULL, access_token CHAR(80) DEFAULT NULL, expiry TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, revoked BOOLEAN NOT NULL, PRIMARY KEY(identifier))');
         $this->addSql('CREATE INDEX IDX_4DD90732B6A2DD68 ON oauth2_refresh_token (access_token)');
         $this->addSql('COMMENT ON COLUMN oauth2_refresh_token.expiry IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('CREATE TABLE refresh_tokens (id SERIAL NOT NULL, refresh_token VARCHAR(128) NOT NULL, username VARCHAR(255) NOT NULL, valid TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY(id))');
-        $this->addSql('CREATE UNIQUE INDEX UNIQ_9BACE7E1C74F2195 ON refresh_tokens (refresh_token)');
         $this->addSql('CREATE TABLE session (id SERIAL NOT NULL, user_entity_id INT DEFAULT NULL, started_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, finished_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_D044D5D481C5F0B9 ON session (user_entity_id)');
         $this->addSql('CREATE INDEX session_user_finished_idx ON session (user_entity_id, finished_at)');
@@ -84,7 +82,6 @@ final class Version20250908010419 extends AbstractMigration
         $this->addSql('DROP TABLE oauth2_authorization_code');
         $this->addSql('DROP TABLE oauth2_client');
         $this->addSql('DROP TABLE oauth2_refresh_token');
-        $this->addSql('DROP TABLE refresh_tokens');
         $this->addSql('DROP TABLE session');
         $this->addSql('DROP TABLE "user"');
         $this->addSql('DROP TABLE messenger_messages');

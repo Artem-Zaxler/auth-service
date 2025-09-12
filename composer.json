@@ -12,7 +12,6 @@
         "doctrine/doctrine-bundle": "^2.16",
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.5",
-        "gesdinet/jwt-refresh-token-bundle": "^1.5",
         "lcobucci/jwt": "*",
         "league/oauth2-server-bundle": "^1.0",
         "lexik/jwt-authentication-bundle": "^3.1",

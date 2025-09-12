@@ -2,10 +2,11 @@
 
 namespace App\Controller;
 
-use App\Service\AdminService;
-use App\Dto\GetPaginatedUsersRequestDto;
 use App\Dto\ApiResponseDto;
+use App\Service\AdminService;
 use OpenApi\Attributes as OA;
+use App\Dto\GetPaginatedUsersRequestDto;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -47,70 +48,28 @@ class UserController extends AbstractController
                     response: 200,
                     description: "Успешное получение списка пользователей",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(
-                                property: "users",
-                                type: "array",
-                                items: new OA\Items(
-                                    properties: [
-                                        new OA\Property(property: "id", type: "integer", example: 1),
-                                        new OA\Property(property: "username", type: "string", example: "john_doe"),
-                                        new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
-                                        new OA\Property(property: "roles", type: "array", items: new OA\Items(type: "string"), example: ["ROLE_USER"]),
-                                        new OA\Property(property: "isBlocked", type: "boolean", example: false),
-                                        new OA\Property(property: "createdAt", type: "string", format: "date-time", example: "2023-01-01T12:00:00+00:00"),
-                                        new OA\Property(property: "updatedAt", type: "string", format: "date-time", example: "2023-01-02T15:30:00+00:00")
-                                    ]
-                                )
-                            ),
-                            new OA\Property(
-                                property: "pagination",
-                                properties: [
-                                    new OA\Property(property: "page", type: "integer", example: 1),
-                                    new OA\Property(property: "limit", type: "integer", example: 20),
-                                    new OA\Property(property: "total", type: "integer", example: 150),
-                                    new OA\Property(property: "totalPages", type: "integer", example: 8)
-                                ],
-                                type: "object"
-                            )
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 401,
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 401),
-                            new OA\Property(property: "message", type: "string", example: "Authentication required"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 403,
                     description: "Недостаточно прав для доступа",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 403),
-                            new OA\Property(property: "message", type: "string", example: "Access Denied"),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 ),
                 new OA\Response(
                     response: 400,
                     description: "Неверные параметры запроса",
                     content: new OA\JsonContent(
-                        properties: [
-                            new OA\Property(property: "status", type: "string", example: "error"),
-                            new OA\Property(property: "code", type: "integer", example: 400),
-                            new OA\Property(property: "message", type: "string", example: "Invalid pagination parameters"),
-                            new OA\Property(property: "errors", type: "array", items: new OA\Items(type: "object")),
-                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
-                        ]
+                        ref: new Model(type: ApiResponseDto::class)
                     )
                 )
             ]
