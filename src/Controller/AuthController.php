@@ -4,11 +4,11 @@ namespace App\Controller;
 
 use App\Dto\UserDto;
 use App\Dto\LoginDto;
-use App\Service\AuthService;
+use App\Dto\UserDtoMapper;
 use App\Dto\ApiResponseDto;
+use App\Service\AuthService;
 use Psr\Log\LoggerInterface;
 use OpenApi\Attributes as OA;
-use App\Dto\UserDtoMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -18,6 +18,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use League\Bundle\OAuth2ServerBundle\Repository\AccessTokenRepository;
+use League\Bundle\OAuth2ServerBundle\Repository\RefreshTokenRepository;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -28,6 +30,8 @@ class AuthController extends AbstractController
         private UserDtoMapper $userDtoMapper,
         private EntityManagerInterface $em,
         private ValidatorInterface $validator,
+        private AccessTokenRepository $accessTokenRepository,
+        private RefreshTokenRepository $refreshTokenRepository,
         private LoggerInterface $logger
     ) {}
 
@@ -179,17 +183,19 @@ class AuthController extends AbstractController
             ]
         )
     ]
-    public function logoutApi(Request $request): JsonResponse
+    public function logoutApi(Security $security): JsonResponse
     {
         try {
-            $data = json_decode($request->getContent(), true) ?? [];
-            if (!isset($data['refresh_token'])) {
+            $user = $security->getUser();
+            if (!$user) {
                 return $this->json(
-                    ApiResponseDto::error('Refresh token is required', Response::HTTP_BAD_REQUEST),
-                    Response::HTTP_BAD_REQUEST
+                    ApiResponseDto::error('Not authenticated', Response::HTTP_UNAUTHORIZED),
+                    Response::HTTP_UNAUTHORIZED
                 );
             }
-            // $this->refreshTokenService->invalidateRefreshToken($data['refresh_token']);
+
+            $this->authService->logout($user);
+
             return $this->json(
                 ApiResponseDto::success(['message' => 'Logout successful'])
             );
