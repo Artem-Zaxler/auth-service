@@ -10,11 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 
 class AuthService
 {
     public function __construct(
         private UserRepository $userRepository,
+        private JWTTokenManagerInterface $jwtManager,
         private UserPasswordHasherInterface $passwordHasher,
         private EntityManagerInterface $em,
         private UserDtoMapper $userDtoMapper,
@@ -43,8 +45,11 @@ class AuthService
 
         $this->logger->info('User authenticated successfully', ['user_id' => $user->getId()]);
 
+        $token = $this->jwtManager->create($user);
+
         return [
             'user' => $userDto,
+            'token' => $token,
         ];
     }
 
@@ -91,5 +96,19 @@ class AuthService
 
             throw new \RuntimeException('Failed to logout: ' . $e->getMessage());
         }
+    }
+
+    public function generateToken(User $user): string
+    {
+        return $this->jwtManager->create($user);
+    }
+
+    public function refreshToken(User $user): string
+    {
+        if ($user->isBlocked()) {
+            throw new AuthenticationException('User is blocked');
+        }
+
+        return $this->generateToken($user);
     }
 }
