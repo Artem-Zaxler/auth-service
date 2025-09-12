@@ -21,23 +21,24 @@
 git clone https://github.com/Artem-Zaxler/auth-service.git
 cd auth-service
 
-# 2) База данных (Docker)
-docker-compose up -d
+# 2) Приложение и база в докере
+docker-compose up -d database
 
 # 3) Зависимости
 composer install
 
-# 4) Конфигурация окружения
-cp .env .env.local   # при необходимости переопределите переменные
-
-# 5) Миграции
+# 4) Миграции
 php bin/console doctrine:migrations:migrate --no-interaction
 
-# 6) Фикстуры (создаются тестовые пользователи и OAuth2-клиент)
+# 5) Фикстуры (создаются тестовые пользователи и OAuth2-клиент)
 php bin/console doctrine:fixtures:load --no-interaction
 
-# 7) Запуск встроенного сервера (или используйте ваш веб-сервер)
-symfony server:start -d  # либо php -S 127.0.0.1:8000 -t public
+# 6) Запуск встроенного сервера для разработки (8000 порт)
+symfony server:start 
+
+# 7) Запуск приложения в продакшене (8080 порт)
+docker-compose down
+docker-compose up -d --build
 ```
 
 ## Переменные окружения (.env/.env.local)
