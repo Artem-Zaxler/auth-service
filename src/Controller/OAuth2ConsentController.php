@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Dto\OAuth2ConsentDto;
 use App\Service\OAuth2ConsentService;
+use App\Dto\ApiResponseDto;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,21 +23,30 @@ class OAuth2ConsentController extends AbstractController
     public function consent(Request $request, OAuth2ConsentService $consentService): Response
     {
         $this->logger->info('OAuth2ConsentController: consent action started');
-
         $dto = new OAuth2ConsentDto($request->query->all());
-
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
             $this->logger->error('OAuth2 consent validation failed', [
                 'errors' => array_map(fn($e) => $e->getMessage(), iterator_to_array($errors))
             ]);
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error(
+                    'Invalid OAuth2 request',
+                    Response::HTTP_BAD_REQUEST,
+                    array_map(fn($e) => [
+                        'field' => $e->getPropertyPath(),
+                        'message' => $e->getMessage()
+                    ], iterator_to_array($errors))
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         if (!$consentService->validateConsentRequest($dto)) {
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         return $this->render('oauth2/consent.html.twig', [
             'client_id' => $dto->clientId,
             'scope' => $dto->scope,
@@ -51,26 +61,34 @@ class OAuth2ConsentController extends AbstractController
     public function approve(Request $request, OAuth2ConsentService $consentService): Response
     {
         $this->logger->info('OAuth2ConsentController: approve action started');
-
         $dto = new OAuth2ConsentDto($request->query->all());
-
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
             $this->logger->error('OAuth2 approve validation failed', [
                 'errors' => array_map(fn($e) => $e->getMessage(), iterator_to_array($errors))
             ]);
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error(
+                    'Invalid OAuth2 request',
+                    Response::HTTP_BAD_REQUEST,
+                    array_map(fn($e) => [
+                        'field' => $e->getPropertyPath(),
+                        'message' => $e->getMessage()
+                    ], iterator_to_array($errors))
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         if (!$consentService->validateConsentRequest($dto)) {
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         $redirectUrl = $consentService->buildRedirectUrl($dto, true);
         $this->logger->info('OAuth2ConsentController: redirecting to authorization with approval', [
             'url' => $redirectUrl,
         ]);
-
         return $this->redirect($redirectUrl);
     }
 
@@ -78,26 +96,34 @@ class OAuth2ConsentController extends AbstractController
     public function deny(Request $request, OAuth2ConsentService $consentService): Response
     {
         $this->logger->info('OAuth2ConsentController: deny action started');
-
         $dto = new OAuth2ConsentDto($request->query->all());
-
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
             $this->logger->error('OAuth2 deny validation failed', [
                 'errors' => array_map(fn($e) => $e->getMessage(), iterator_to_array($errors))
             ]);
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error(
+                    'Invalid OAuth2 request',
+                    Response::HTTP_BAD_REQUEST,
+                    array_map(fn($e) => [
+                        'field' => $e->getPropertyPath(),
+                        'message' => $e->getMessage()
+                    ], iterator_to_array($errors))
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         if (!$consentService->validateConsentRequest($dto)) {
-            return new Response('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error('Invalid OAuth2 request', Response::HTTP_BAD_REQUEST),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         $redirectUrl = $consentService->buildRedirectUrl($dto, false);
         $this->logger->info('OAuth2ConsentController: redirecting to authorization with denial', [
             'url' => $redirectUrl,
         ]);
-
         return $this->redirect($redirectUrl);
     }
 }

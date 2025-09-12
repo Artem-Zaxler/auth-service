@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Dto\UserDto;
 use App\Dto\LoginDto;
 use App\Service\AuthService;
+use App\Dto\ApiResponseDto;
 use Psr\Log\LoggerInterface;
 use OpenApi\Attributes as OA;
 use App\Service\Dto\UserDtoMapper;
@@ -40,7 +41,6 @@ class AuthController extends AbstractController
         }
         $error = $authenticationUtils->getLastAuthenticationError();
         $lastUsername = $authenticationUtils->getLastUsername();
-
         return $this->render("user/auth/login.html.twig", [
             'error' => $error,
             'last_username' => $lastUsername,
@@ -85,8 +85,10 @@ class AuthController extends AbstractController
                     description: "Ошибка аутентификации",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Authentication failed"),
-                            new OA\Property(property: "message", type: "string", example: "Invalid credentials")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 401),
+                            new OA\Property(property: "message", type: "string", example: "Authentication failed"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 ),
@@ -95,8 +97,11 @@ class AuthController extends AbstractController
                     description: "Неверные данные запроса",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Bad Request"),
-                            new OA\Property(property: "message", type: "string", example: "Invalid input data")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 400),
+                            new OA\Property(property: "message", type: "string", example: "Validation failed"),
+                            new OA\Property(property: "errors", type: "array", items: new OA\Items(type: "object")),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 )
@@ -110,38 +115,43 @@ class AuthController extends AbstractController
                 'username' => $request->request->get('username') ?? $request->toArray()['username'] ?? '',
                 'password' => $request->request->get('password') ?? $request->toArray()['password'] ?? '',
             ];
-
             $loginDto = new LoginDto($data);
-
             $errors = $this->validator->validate($loginDto);
             if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
-
-                return $this->json([
-                    'error' => 'Validation failed',
-                    'messages' => $errorMessages
-                ], Response::HTTP_BAD_REQUEST);
+                $this->logger->error('Validation failed', [
+                    'errors' => array_map(fn($e) => $e->getMessage(), iterator_to_array($errors))
+                ]);
+                return $this->json(
+                    ApiResponseDto::error(
+                        'Validation failed',
+                        Response::HTTP_BAD_REQUEST,
+                        array_map(fn($e) => [
+                            'field' => $e->getPropertyPath(),
+                            'message' => $e->getMessage()
+                        ], iterator_to_array($errors))
+                    ),
+                    Response::HTTP_BAD_REQUEST
+                );
             }
-
             $user = $this->authService->authenticate($loginDto);
-
-            return $this->json([
-                'token' =>  $user['token'],
-                'user' =>  $user['user'],
-            ], Response::HTTP_OK);
+            return $this->json(
+                ApiResponseDto::success([
+                    'token' => $user['token'],
+                    'user' => $user['user'],
+                ])
+            );
         } catch (AuthenticationException $e) {
-            return $this->json([
-                'error' => 'Authentication failed',
-                'message' => $e->getMessage()
-            ], Response::HTTP_UNAUTHORIZED);
+            $this->logger->error('Authentication failed', ['error' => $e->getMessage()]);
+            return $this->json(
+                ApiResponseDto::error($e->getMessage(), Response::HTTP_UNAUTHORIZED),
+                Response::HTTP_UNAUTHORIZED
+            );
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Server error',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $this->logger->error('Server error', ['error' => $e->getMessage()]);
+            return $this->json(
+                ApiResponseDto::error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -175,8 +185,10 @@ class AuthController extends AbstractController
                     description: "Неверный refresh token",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Invalid token"),
-                            new OA\Property(property: "message", type: "string", example: "The provided refresh token is invalid")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 400),
+                            new OA\Property(property: "message", type: "string", example: "Refresh token is required"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 ),
@@ -185,7 +197,10 @@ class AuthController extends AbstractController
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Unauthorized")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 401),
+                            new OA\Property(property: "message", type: "string", example: "Unauthorized"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 )
@@ -196,24 +211,22 @@ class AuthController extends AbstractController
     {
         try {
             $data = json_decode($request->getContent(), true) ?? [];
-
             if (!isset($data['refresh_token'])) {
-                return $this->json([
-                    'error' => 'Bad Request',
-                    'message' => 'Refresh token is required'
-                ], Response::HTTP_BAD_REQUEST);
+                return $this->json(
+                    ApiResponseDto::error('Refresh token is required', Response::HTTP_BAD_REQUEST),
+                    Response::HTTP_BAD_REQUEST
+                );
             }
-
             $this->refreshTokenService->invalidateRefreshToken($data['refresh_token']);
-
-            return $this->json([
-                'message' => 'Logout successful'
-            ]);
+            return $this->json(
+                ApiResponseDto::success(['message' => 'Logout successful'])
+            );
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Logout failed',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $this->logger->error('Logout failed', ['error' => $e->getMessage()]);
+            return $this->json(
+                ApiResponseDto::error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 
@@ -234,7 +247,10 @@ class AuthController extends AbstractController
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Not authenticated")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 401),
+                            new OA\Property(property: "message", type: "string", example: "Not authenticated"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 )
@@ -244,15 +260,15 @@ class AuthController extends AbstractController
     public function meApi(Security $security): JsonResponse
     {
         $user = $security->getUser();
-
         if (!$user) {
-            return $this->json([
-                'error' => 'Not authenticated'
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->json(
+                ApiResponseDto::error('Not authenticated', Response::HTTP_UNAUTHORIZED),
+                Response::HTTP_UNAUTHORIZED
+            );
         }
-
         $userDto = $this->userDtoMapper->mapUserToDto($user);
-
-        return $this->json($userDto, Response::HTTP_OK);
+        return $this->json(
+            ApiResponseDto::success($userDto)
+        );
     }
 }

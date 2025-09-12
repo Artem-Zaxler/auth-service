@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Service\AdminService;
 use App\Dto\GetPaginatedUsersRequestDto;
+use App\Dto\ApiResponseDto;
 use OpenApi\Attributes as OA;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use Symfony\Component\HttpFoundation\Request;
@@ -82,8 +83,10 @@ class UserController extends AbstractController
                     description: "Пользователь не аутентифицирован",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Unauthorized"),
-                            new OA\Property(property: "message", type: "string", example: "Authentication required")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 401),
+                            new OA\Property(property: "message", type: "string", example: "Authentication required"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 ),
@@ -92,8 +95,10 @@ class UserController extends AbstractController
                     description: "Недостаточно прав для доступа",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Access Denied"),
-                            new OA\Property(property: "message", type: "string", example: "Not authenticated.")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 403),
+                            new OA\Property(property: "message", type: "string", example: "Access Denied"),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 ),
@@ -102,8 +107,11 @@ class UserController extends AbstractController
                     description: "Неверные параметры запроса",
                     content: new OA\JsonContent(
                         properties: [
-                            new OA\Property(property: "error", type: "string", example: "Bad Request"),
-                            new OA\Property(property: "message", type: "string", example: "Invalid pagination parameters")
+                            new OA\Property(property: "status", type: "string", example: "error"),
+                            new OA\Property(property: "code", type: "integer", example: 400),
+                            new OA\Property(property: "message", type: "string", example: "Invalid pagination parameters"),
+                            new OA\Property(property: "errors", type: "array", items: new OA\Items(type: "object")),
+                            new OA\Property(property: "timestamp", type: "string", example: "2025-09-12T12:00:00+00:00")
                         ]
                     )
                 )
@@ -113,33 +121,32 @@ class UserController extends AbstractController
     public function listUsers(Request $request): JsonResponse
     {
         if (!$this->isGranted('ROLE_USER') && !$this->isGranted('SCOPE_user:read')) {
-            throw new AccessDeniedException('Not authenticated.');
+            return $this->json(
+                ApiResponseDto::error('Access Denied', Response::HTTP_FORBIDDEN),
+                Response::HTTP_FORBIDDEN
+            );
         }
-
         $page = max(1, $request->query->getInt('page', 1));
         $limit = max(1, $request->query->getInt('limit', 20));
-
         $dto = new GetPaginatedUsersRequestDto();
         $dto->page = $page;
         $dto->limit = $limit;
-
         $errors = $this->validator->validate($dto);
         if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-
-            return $this->json([
-                'error' => 'Bad Request',
-                'message' => 'Invalid pagination parameters',
-                'details' => $errorMessages
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->json(
+                ApiResponseDto::error(
+                    'Invalid pagination parameters',
+                    Response::HTTP_BAD_REQUEST,
+                    array_map(fn($error) => [
+                        'field' => $error->getPropertyPath(),
+                        'message' => $error->getMessage()
+                    ], iterator_to_array($errors))
+                ),
+                Response::HTTP_BAD_REQUEST
+            );
         }
-
         try {
             $result = $this->adminService->getPaginatedUsers($dto);
-
             $usersArray = array_map(function ($user) {
                 return [
                     'id' => $user->getId(),
@@ -151,21 +158,22 @@ class UserController extends AbstractController
                     'updatedAt' => $user->getUpdatedAt()->format('Y-m-d H:i:s')
                 ];
             }, $result['users']);
-
-            return $this->json([
-                'users' => $usersArray,
-                'pagination' => [
-                    'page' => $result['page'],
-                    'limit' => $result['limit'],
-                    'total' => $result['total'],
-                    'totalPages' => $result['totalPages']
-                ]
-            ], Response::HTTP_OK);
+            return $this->json(
+                ApiResponseDto::success([
+                    'users' => $usersArray,
+                    'pagination' => [
+                        'page' => $result['page'],
+                        'limit' => $result['limit'],
+                        'total' => $result['total'],
+                        'totalPages' => $result['totalPages']
+                    ]
+                ])
+            );
         } catch (\Exception $e) {
-            return $this->json([
-                'error' => 'Server error',
-                'message' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->json(
+                ApiResponseDto::error($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
         }
     }
 }
