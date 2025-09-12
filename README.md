@@ -30,7 +30,7 @@ composer install
 # 4. Применить миграции базы данных
 php bin/console doctrine:migrations:migrate --no-interaction
 
-# 5. Загрузить фикстуры (создать тестовых пользователей с ролями ROLE_ADMIN и ROLE_USER)
+# 5. Загрузить фикстуры (создать тестовых пользователей с ролями ROLE_ADMIN и ROLE_USER, создать oauth2 клиент)
 php bin/console doctrine:fixtures:load --no-interaction
 
 # 6. (Опционально) Генерация OAuth2-ключей
